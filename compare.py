@@ -33,6 +33,8 @@ def update_ball(
     controller.tune(error)
     ball.pos.y += output * dt
     graph.plot(t, error)
+    # move ball forward simulating time
+    ball.pos.z += dt
 
 
 def hide_ball(ball: sphere) -> None:
@@ -59,11 +61,11 @@ amplitude = 5.0
 frequency = 0.1
 offset = 5.0
 
-pid_ball = sphere(pos=vector(-5, 0, 0), radius=1, color=color.red)
-bang_ball = sphere(pos=vector(0, 0, 0), radius=1, color=color.green)
-p_only_ball = sphere(pos=vector(5, 0, 0), radius=1, color=color.blue)
-fuzzy_ball = sphere(pos=vector(10, 0, 0), radius=1, color=color.purple)
-lqr_ball = sphere(pos=vector(15, 0, 0), radius=1, color=color.magenta)
+pid_ball = sphere(pos=vector(-5, 0, 0), radius=1, color=color.red, make_trail=True, retain=1000, trail_radius=0.1)
+bang_ball = sphere(pos=vector(0, 0, 0), radius=1, color=color.green, make_trail=True, retain=1000, trail_radius=0.1)
+p_only_ball = sphere(pos=vector(5, 0, 0), radius=1, color=color.blue, make_trail=True, retain=1000, trail_radius=0.1)
+fuzzy_ball = sphere(pos=vector(10, 0, 0), radius=1, color=color.purple, make_trail=True, retain=1000, trail_radius=0.1)
+lqr_ball = sphere(pos=vector(15, 0, 0), radius=1, color=color.magenta, make_trail=True, retain=1000, trail_radius=0.1)
 
 
 target = cylinder(
@@ -270,7 +272,11 @@ while True:
 
     # Update target position and graph
     target.pos.y = target_height
+    target.pos.z += dt
     if target_enabled:
-        target_graph.plot(t, target_height - offset)
+        target_graph.plot(t, target_height - offset, fast=True)
+
+    # Update camera
+    scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, target.pos.z + 10)
 
     t += dt
