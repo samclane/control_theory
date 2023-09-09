@@ -10,7 +10,7 @@ from vpython import (
     wtext,
     checkbox,
     sin,
-    curve,
+    graph,
 )
 from controllers import (
     PIDController,
@@ -48,6 +48,7 @@ def target_function(t: float) -> float:
 
 
 # Initialize graphs
+graph(scroll=True, fast=True, xmin=0, xmax=10)
 target_graph = gcurve(color=color.yellow, label="Target Height")
 pid_error_graph = gcurve(color=color.red, label="PID Error")
 bang_error_graph = gcurve(color=color.green, label="Bang-Bang Error")
