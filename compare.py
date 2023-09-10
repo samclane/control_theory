@@ -22,7 +22,7 @@ from controllers import (
 )
 
 from params import dt
-
+import numpy as np
 
 def update_ball(
     ball: sphere, controller: Controller, target_height: float, t: float, graph: gcurve
@@ -55,6 +55,15 @@ bang_error_graph = gcurve(color=color.green, label="Bang-Bang Error")
 p_error_graph = gcurve(color=color.blue, label="P-Only Error")
 fuzzy_error_graph = gcurve(color=color.purple, label="Fuzzy Logic Error")
 lqr_error_graph = gcurve(color=color.magenta, label="LQR Error")
+
+# Initialize frequency domain graphs
+graph2 = graph(scroll=True, fast=True, xmin=0, xmax=10)
+target_graph2 = gcurve(color=color.yellow, label="Target Height")
+pid_error_graph2 = gcurve(color=color.red, label="PID Error")
+bang_error_graph2 = gcurve(color=color.green, label="Bang-Bang Error")
+p_error_graph2 = gcurve(color=color.blue, label="P-Only Error")
+fuzzy_error_graph2 = gcurve(color=color.purple, label="Fuzzy Logic Error")
+lqr_error_graph2 = gcurve(color=color.magenta, label="LQR Error")
 
 
 # Initialize simulation
@@ -193,7 +202,7 @@ wtext(text="\n")
 wtext(text=" Amplitude")
 amplitude_slider = slider(min=0, max=10, value=5.0, length=300, bind=set_amplitude)
 wtext(text=" Frequency")
-frequency_slider = slider(min=0, max=1, value=0.1, length=300, bind=set_frequency)
+frequency_slider = slider(min=0, max=10, value=0.1, length=300, bind=set_frequency)
 wtext(text=" Offset")
 offset_slider = slider(min=0, max=10, value=5.0, length=300, bind=set_offset)
 
@@ -248,6 +257,12 @@ p_only_checkbox = checkbox(bind=toggle_p_only, text="Enable P-Only", checked=Tru
 fuzzy_checkbox = checkbox(bind=toggle_fuzzy, text="Enable Fuzzy Logic", checked=True)
 lqr_checkbox = checkbox(bind=toggle_lqr, text="Enable LQR", checked=True)
 
+pid_errors = []
+bang_errors = []
+p_only_errors = []
+fuzzy_errors = []
+lqr_errors = []
+
 
 controllers_and_balls = [
     (pid_controller, pid_ball, pid_error_graph, pid_checkbox),
@@ -276,6 +291,27 @@ while True:
     target.pos.z += dt
     if target_enabled:
         target_graph.plot(t, target_height - offset, fast=True)
+
+    pid_errors.append(target_height - pid_ball.pos.y)
+    bang_errors.append(target_height - bang_ball.pos.y)
+    p_only_errors.append(target_height - p_only_ball.pos.y)
+    fuzzy_errors.append(target_height - fuzzy_ball.pos.y)
+    lqr_errors.append(target_height - lqr_ball.pos.y)
+
+    # Update frequency domain graphs
+    if t > 0:
+        pid_error_graph2.plot(t, np.abs(np.fft.fft(pid_errors))[-1], fast=True)
+        bang_error_graph2.plot(t, np.abs(np.fft.fft(bang_errors))[-1], fast=True)
+        p_error_graph2.plot(t, np.abs(np.fft.fft(p_only_errors))[-1], fast=True)
+        fuzzy_error_graph2.plot(t, np.abs(np.fft.fft(fuzzy_errors))[-1], fast=True)
+        lqr_error_graph2.plot(t, np.abs(np.fft.fft(lqr_errors))[-1], fast=True)
+
+    if len(pid_errors) > 1000:
+        pid_errors.pop(0)
+        bang_errors.pop(0)
+        p_only_errors.pop(0)
+        fuzzy_errors.pop(0)
+        lqr_errors.pop(0)
 
     # Update camera
     scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, target.pos.z + 10)

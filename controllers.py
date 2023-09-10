@@ -40,7 +40,7 @@ class PIDController(Controller):
     def tune(self, error: float) -> None:
         best_err = error
         for i in range(3):
-            self.dp[i] *= 1.1
+            self.dp[i] *= 1.1 * dt
             if i == 0:
                 self.Kp += self.dp[i]
             elif i == 1:
@@ -53,7 +53,7 @@ class PIDController(Controller):
             if err < best_err:
                 best_err = err
             else:
-                self.dp[i] *= 0.9
+                self.dp[i] *= 0.9 * dt
 
 
 class BangBangController(Controller):
@@ -111,7 +111,8 @@ class FuzzyLogicController(Controller):
         return self.calculate_update(error) * self.delta
 
     def tune(self, error: float) -> None:
-        pass
+        # Update delta based on error magnitude
+        self.delta += dt * error
 
 
 class LQRController(Controller):
@@ -135,5 +136,5 @@ class LQRController(Controller):
     def tune(self, error: float) -> None:
         # Update Q and R based on error and recalculate K
         self.Q += dt * error
-        self.R += 0.001 * error
+        self.R += dt/10 * error
         self.K = self.calculate_gain(self.A, self.B, self.Q, self.R)
