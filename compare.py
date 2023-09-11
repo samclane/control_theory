@@ -24,27 +24,38 @@ from controllers import (
 from params import dt
 import numpy as np
 
-def update_ball(
-    ball: sphere, controller: Controller, target_height: float, t: float, graph: gcurve
-) -> None:
-    """Update the position of the ball based on the controller."""
-    error = target_height - ball.pos.y
-    output = controller.update(error)
-    controller.tune(error)
-    ball.pos.y += output * dt
-    graph.plot(t, error)
-    # move ball forward simulating time
-    ball.pos.z += dt
-
-
-def hide_ball(ball: sphere) -> None:
-    """Hide the ball by setting its opacity to 0."""
-    ball.opacity = 0
-
-
 def target_function(t: float) -> float:
     """Calculate the target height based on time."""
     return offset + amplitude * sin(frequency * t)
+
+
+class ControlVisualizer:
+    def __init__(self, graph1, graph2, ball, controller, checkbox) -> None:
+        self.graph1 = graph1
+        self.graph2 = graph2
+        self.ball = ball
+        self.controller = controller
+        self.checkbox = checkbox
+        self.errors = []
+
+    def update_ball(self, target_height, t):
+        """Update the position of the ball based on the controller."""
+        error = target_height - self.ball.pos.y
+        output = self.controller.update(error)
+        self.controller.tune(error)
+        self.ball.pos.y += output * dt
+        self.graph1.plot(t, error)
+        # move ball forward simulating time
+        self.ball.pos.z += dt
+        self.errors.append(error)
+        if t > 0:
+            self.graph2.plot(t, np.abs(np.fft.fft(self.errors))[-1], fast=True)
+        if len(self.errors) > 1000:
+            self.errors.pop(0)
+
+    def hide_ball(self):
+        """Hide the ball by setting its opacity to 0."""
+        self.ball.opacity = 0
 
 
 # Initialize graphs
@@ -100,11 +111,6 @@ lqr_controller = LQRController(A, B, Q, R)
 
 
 # Slider callback functions
-def target_slider_changed(slider):
-    global target_height
-    target_height = slider.value
-    target.pos.y = target_height
-
 
 def set_Kp(slider):
     global pid_controller
@@ -122,10 +128,6 @@ def set_Kd(slider):
 
 
 # Initialize sliders and labels
-wtext(text=" Target Height")
-target_slider = slider(min=0, max=10, value=5, length=300, bind=target_slider_changed)
-
-wtext(text="\n")
 
 wtext(text=" Kp")
 Kp_slider = slider(min=0, max=5, value=1.0, length=300, bind=set_Kp)
@@ -263,14 +265,15 @@ p_only_errors = []
 fuzzy_errors = []
 lqr_errors = []
 
-
-controllers_and_balls = [
-    (pid_controller, pid_ball, pid_error_graph, pid_checkbox),
-    (bang_controller, bang_ball, bang_error_graph, bang_checkbox),
-    (p_only_controller, p_only_ball, p_error_graph, p_only_checkbox),
-    (fuzzy_controller, fuzzy_ball, fuzzy_error_graph, fuzzy_checkbox),
-    (lqr_controller, lqr_ball, lqr_error_graph, lqr_checkbox),
+# Create visualizer objects
+visualizers = [
+    ControlVisualizer(pid_error_graph, pid_error_graph2, pid_ball, pid_controller, pid_checkbox),
+    ControlVisualizer(bang_error_graph, bang_error_graph2, bang_ball, bang_controller, bang_checkbox),
+    ControlVisualizer(p_error_graph, p_error_graph2, p_only_ball, p_only_controller, p_only_checkbox),
+    ControlVisualizer(fuzzy_error_graph, fuzzy_error_graph2, fuzzy_ball, fuzzy_controller, fuzzy_checkbox),
+    ControlVisualizer(lqr_error_graph, lqr_error_graph2, lqr_ball, lqr_controller, lqr_checkbox),
 ]
+
 
 # Main loop
 t = 0
@@ -280,38 +283,17 @@ while True:
     target_height = target_function(t)
 
     # Update controllers and ball positions
-    for controller, ball, graph, checkbox in controllers_and_balls:
+    for vis in visualizers:
         if checkbox.checked:
-            update_ball(ball, controller, target_height, t, graph)
+            vis.update_ball(target_height, t)
         else:
-            hide_ball(ball)
+            vis.hide_ball()
 
     # Update target position and graph
     target.pos.y = target_height
     target.pos.z += dt
     if target_enabled:
         target_graph.plot(t, target_height - offset, fast=True)
-
-    pid_errors.append(target_height - pid_ball.pos.y)
-    bang_errors.append(target_height - bang_ball.pos.y)
-    p_only_errors.append(target_height - p_only_ball.pos.y)
-    fuzzy_errors.append(target_height - fuzzy_ball.pos.y)
-    lqr_errors.append(target_height - lqr_ball.pos.y)
-
-    # Update frequency domain graphs
-    if t > 0:
-        pid_error_graph2.plot(t, np.abs(np.fft.fft(pid_errors))[-1], fast=True)
-        bang_error_graph2.plot(t, np.abs(np.fft.fft(bang_errors))[-1], fast=True)
-        p_error_graph2.plot(t, np.abs(np.fft.fft(p_only_errors))[-1], fast=True)
-        fuzzy_error_graph2.plot(t, np.abs(np.fft.fft(fuzzy_errors))[-1], fast=True)
-        lqr_error_graph2.plot(t, np.abs(np.fft.fft(lqr_errors))[-1], fast=True)
-
-    if len(pid_errors) > 1000:
-        pid_errors.pop(0)
-        bang_errors.pop(0)
-        p_only_errors.pop(0)
-        fuzzy_errors.pop(0)
-        lqr_errors.pop(0)
 
     # Update camera
     scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, target.pos.z + 10)
