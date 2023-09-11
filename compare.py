@@ -20,7 +20,7 @@ from controllers import (
     LQRController,
 )
 
-from params import dt
+from params import dt, n_fft
 import numpy as np
 
 
@@ -37,6 +37,7 @@ class ControlVisualizer:
         self.controller = controller
         self.checkbox = checkbox
         self.errors = []
+        self.last_update_time = 0  # Added this line to keep track of the last update time
 
     def update_ball(self, target_height, t):
         """Update the position of the ball based on the controller."""
@@ -49,10 +50,21 @@ class ControlVisualizer:
         # move ball forward simulating time
         self.ball.pos.z += dt
         self.errors.append(error)
+        
         if t > 0 and self.checkbox.checked:
-            self.graph2.plot(t, np.abs(np.fft.fft(self.errors))[-1], fast=True)
-        if len(self.errors) > 1000:
+            if t - self.last_update_time >= 1.0:  # Update frequency plot every second
+                self.graph2.delete()
+                fft_values = np.abs(np.fft.fft(self.errors))
+                freqs = np.fft.fftfreq(len(fft_values), dt)
+                for freq, fft_val in zip(freqs, fft_values):
+                    if freq > 0:
+                        self.graph2.plot(freq, np.log10(fft_val), fast=True)
+                self.last_update_time = t  # Update the last update time
+        
+        if len(self.errors) > n_fft:
             self.errors.pop(0)
+
+
 
     def hide_ball(self):
         """Hide the ball by setting its opacity to 0."""
@@ -69,7 +81,7 @@ fuzzy_error_graph = gcurve(color=color.purple, label="Fuzzy Logic Error")
 lqr_error_graph = gcurve(color=color.magenta, label="LQR Error")
 
 # Initialize frequency domain graphs
-graph2 = graph(scroll=True, fast=True, xmin=0, xmax=10)
+graph2 = graph(scroll=False, fast=True, xmin=0, xmax=50)
 target_graph2 = gcurve(color=color.yellow, label="Target Height")
 pid_error_graph2 = gcurve(color=color.red, label="PID Error")
 bang_error_graph2 = gcurve(color=color.green, label="Bang-Bang Error")
