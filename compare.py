@@ -18,7 +18,6 @@ from controllers import (
     POnlyController,
     FuzzyLogicController,
     LQRController,
-    Controller,
 )
 
 from params import dt
@@ -45,11 +44,12 @@ class ControlVisualizer:
         output = self.controller.update(error)
         self.controller.tune(error)
         self.ball.pos.y += output * dt
-        self.graph1.plot(t, error)
+        if self.checkbox.checked:
+            self.graph1.plot(t, error)
         # move ball forward simulating time
         self.ball.pos.z += dt
         self.errors.append(error)
-        if t > 0:
+        if t > 0 and self.checkbox.checked:
             self.graph2.plot(t, np.abs(np.fft.fft(self.errors))[-1], fast=True)
         if len(self.errors) > 1000:
             self.errors.pop(0)
