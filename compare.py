@@ -24,6 +24,7 @@ from controllers import (
 from params import dt
 import numpy as np
 
+
 def target_function(t: float) -> float:
     """Calculate the target height based on time."""
     return offset + amplitude * sin(frequency * t)
@@ -82,11 +83,46 @@ amplitude = 5.0
 frequency = 0.1
 offset = 5.0
 
-pid_ball = sphere(pos=vector(-5, 0, 0), radius=1, color=color.red, make_trail=True, retain=1000, trail_radius=0.1)
-bang_ball = sphere(pos=vector(0, 0, 0), radius=1, color=color.green, make_trail=True, retain=1000, trail_radius=0.1)
-p_only_ball = sphere(pos=vector(5, 0, 0), radius=1, color=color.blue, make_trail=True, retain=1000, trail_radius=0.1)
-fuzzy_ball = sphere(pos=vector(10, 0, 0), radius=1, color=color.purple, make_trail=True, retain=1000, trail_radius=0.1)
-lqr_ball = sphere(pos=vector(15, 0, 0), radius=1, color=color.magenta, make_trail=True, retain=1000, trail_radius=0.1)
+pid_ball = sphere(
+    pos=vector(-5, 0, 0),
+    radius=1,
+    color=color.red,
+    make_trail=True,
+    retain=1000,
+    trail_radius=0.1,
+)
+bang_ball = sphere(
+    pos=vector(0, 0, 0),
+    radius=1,
+    color=color.green,
+    make_trail=True,
+    retain=1000,
+    trail_radius=0.1,
+)
+p_only_ball = sphere(
+    pos=vector(5, 0, 0),
+    radius=1,
+    color=color.blue,
+    make_trail=True,
+    retain=1000,
+    trail_radius=0.1,
+)
+fuzzy_ball = sphere(
+    pos=vector(10, 0, 0),
+    radius=1,
+    color=color.purple,
+    make_trail=True,
+    retain=1000,
+    trail_radius=0.1,
+)
+lqr_ball = sphere(
+    pos=vector(15, 0, 0),
+    radius=1,
+    color=color.magenta,
+    make_trail=True,
+    retain=1000,
+    trail_radius=0.1,
+)
 
 
 target = cylinder(
@@ -111,6 +147,7 @@ lqr_controller = LQRController(A, B, Q, R)
 
 
 # Slider callback functions
+
 
 def set_Kp(slider):
     global pid_controller
@@ -267,11 +304,25 @@ lqr_errors = []
 
 # Create visualizer objects
 visualizers = [
-    ControlVisualizer(pid_error_graph, pid_error_graph2, pid_ball, pid_controller, pid_checkbox),
-    ControlVisualizer(bang_error_graph, bang_error_graph2, bang_ball, bang_controller, bang_checkbox),
-    ControlVisualizer(p_error_graph, p_error_graph2, p_only_ball, p_only_controller, p_only_checkbox),
-    ControlVisualizer(fuzzy_error_graph, fuzzy_error_graph2, fuzzy_ball, fuzzy_controller, fuzzy_checkbox),
-    ControlVisualizer(lqr_error_graph, lqr_error_graph2, lqr_ball, lqr_controller, lqr_checkbox),
+    ControlVisualizer(
+        pid_error_graph, pid_error_graph2, pid_ball, pid_controller, pid_checkbox
+    ),
+    ControlVisualizer(
+        bang_error_graph, bang_error_graph2, bang_ball, bang_controller, bang_checkbox
+    ),
+    ControlVisualizer(
+        p_error_graph, p_error_graph2, p_only_ball, p_only_controller, p_only_checkbox
+    ),
+    ControlVisualizer(
+        fuzzy_error_graph,
+        fuzzy_error_graph2,
+        fuzzy_ball,
+        fuzzy_controller,
+        fuzzy_checkbox,
+    ),
+    ControlVisualizer(
+        lqr_error_graph, lqr_error_graph2, lqr_ball, lqr_controller, lqr_checkbox
+    ),
 ]
 
 

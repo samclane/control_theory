@@ -136,5 +136,5 @@ class LQRController(Controller):
     def tune(self, error: float) -> None:
         # Update Q and R based on error and recalculate K
         self.Q += dt * error
-        self.R += dt/10 * error
+        self.R += dt / 10 * error
         self.K = self.calculate_gain(self.A, self.B, self.Q, self.R)
