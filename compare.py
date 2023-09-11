@@ -13,6 +13,7 @@ from vpython import (
     graph,
 )
 from controllers import (
+    Controller,
     PIDController,
     BangBangController,
     POnlyController,
@@ -30,16 +31,25 @@ def target_function(t: float) -> float:
 
 
 class ControlVisualizer:
-    def __init__(self, graph1, graph2, ball, controller, checkbox) -> None:
+    def __init__(
+        self,
+        graph1: gcurve,
+        graph2: gcurve,
+        ball: sphere,
+        controller: Controller,
+        checkbox: checkbox,
+    ) -> None:
         self.graph1 = graph1
         self.graph2 = graph2
         self.ball = ball
         self.controller = controller
         self.checkbox = checkbox
         self.errors = []
-        self.last_update_time = 0  # Added this line to keep track of the last update time
+        self.last_update_time = (
+            0  # Added this line to keep track of the last update time
+        )
 
-    def update_ball(self, target_height, t):
+    def update_ball(self, target_height: float, t: float) -> None:
         """Update the position of the ball based on the controller."""
         error = target_height - self.ball.pos.y
         output = self.controller.update(error)
@@ -50,21 +60,18 @@ class ControlVisualizer:
         # move ball forward simulating time
         self.ball.pos.z += dt
         self.errors.append(error)
-        
-        if t > 0 and self.checkbox.checked:
-            if t - self.last_update_time >= 1.0:  # Update frequency plot every second
-                self.graph2.delete()
-                fft_values = np.abs(np.fft.fft(self.errors))
-                freqs = np.fft.fftfreq(len(fft_values), dt)
-                for freq, fft_val in zip(freqs, fft_values):
-                    if freq > 0:
-                        self.graph2.plot(freq, np.log10(fft_val), fast=True)
-                self.last_update_time = t  # Update the last update time
-        
+
+        if t > 0 and self.checkbox.checked and t - self.last_update_time >= 1.0:
+            self.graph2.delete()
+            fft_values = np.abs(np.fft.fft(self.errors))
+            freqs = np.fft.fftfreq(len(fft_values), dt)
+            for freq, fft_val in zip(freqs, fft_values):
+                if freq > 0:
+                    self.graph2.plot(freq, np.log10(fft_val), fast=True)
+            self.last_update_time = t  # Update the last update time
+
         if len(self.errors) > n_fft:
             self.errors.pop(0)
-
-
 
     def hide_ball(self):
         """Hide the ball by setting its opacity to 0."""
