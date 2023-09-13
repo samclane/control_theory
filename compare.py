@@ -25,9 +25,26 @@ from params import dt, n_fft
 import numpy as np
 
 
+class FunctionGenerator:
+    def __init__(self, amplitude: float = 5.0, frequency: float = 0.1, offset: float = 5.0) -> None:
+        self.amplitude = amplitude
+        self.frequency = frequency
+        self.offset = offset
+
+    def set_params(self, amplitude: float, frequency: float, offset: float):
+        self.amplitude = amplitude
+        self.frequency = frequency
+        self.offset = offset
+
+    def __call__(self, t: float) -> float:
+        return self.offset + self.amplitude * sin(self.frequency * t)
+
+
+function_generator = FunctionGenerator()
+
 def target_function(t: float) -> float:
     """Calculate the target height based on time."""
-    return offset + amplitude * sin(frequency * t)
+    return function_generator(t)
 
 
 class ControlVisualizer:
@@ -95,12 +112,6 @@ bang_error_graph2 = gcurve(color=color.green, label="Bang-Bang Error")
 p_error_graph2 = gcurve(color=color.blue, label="P-Only Error")
 fuzzy_error_graph2 = gcurve(color=color.purple, label="Fuzzy Logic Error")
 lqr_error_graph2 = gcurve(color=color.magenta, label="LQR Error")
-
-
-# Initialize simulation
-amplitude = 5.0
-frequency = 0.1
-offset = 5.0
 
 pid_ball = sphere(
     pos=vector(-5, 0, 0),
@@ -241,19 +252,24 @@ R_slider = slider(min=dt, max=0.5, value=0.1, length=300, bind=set_R)
 
 # Callback functions for the sliders
 def set_amplitude(slider):
-    global amplitude
-    amplitude = slider.value
+    global function_generator
+    function_generator.set_params(
+        slider.value, function_generator.frequency, function_generator.offset
+    )
 
 
 def set_frequency(slider):
-    global frequency
-    frequency = slider.value
+    global function_generator
+    function_generator.set_params(
+        function_generator.amplitude, slider.value, function_generator.offset
+    )
 
 
 def set_offset(slider):
-    global offset
-    offset = slider.value
-
+    global function_generator
+    function_generator.set_params(
+        function_generator.amplitude, function_generator.frequency, slider.value
+    )
 
 # Add sliders for target function
 wtext(text="\n")
@@ -363,7 +379,7 @@ while True:
     target.pos.y = target_height
     target.pos.z += dt
     if target_enabled:
-        target_graph.plot(t, target_height - offset, fast=True)
+        target_graph.plot(t, target_height - function_generator.offset, fast=True)
 
     # Update camera
     scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, target.pos.z + 10)
