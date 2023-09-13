@@ -11,6 +11,7 @@ from vpython import (
     checkbox,
     sin,
     graph,
+    radio,
 )
 from controllers import (
     Controller,
@@ -23,24 +24,57 @@ from controllers import (
 
 from params import dt, n_fft
 import numpy as np
+from enum import Enum
+import random
+
+
+class FunctionType(Enum):
+    SINE = 1
+    SQUARE = 2
+    SAWTOOTH = 3
 
 
 class FunctionGenerator:
-    def __init__(self, amplitude: float = 5.0, frequency: float = 0.1, offset: float = 5.0) -> None:
+    def __init__(
+        self,
+        amplitude=5.0,
+        frequency=1,
+        offset=5.0,
+        func_type=FunctionType.SINE,
+        noise_level=0.2,
+    ):
         self.amplitude = amplitude
         self.frequency = frequency
         self.offset = offset
+        self.func_type = func_type
+        self.noise_level = noise_level
 
-    def set_params(self, amplitude: float, frequency: float, offset: float):
-        self.amplitude = amplitude
-        self.frequency = frequency
-        self.offset = offset
+    def set_params(self, **kwargs):
+        self.amplitude = kwargs.get("amplitude", self.amplitude)
+        self.frequency = kwargs.get("frequency", self.frequency)
+        self.offset = kwargs.get("offset", self.offset)
+        self.func_type = kwargs.get("func_type", self.func_type)
+        self.noise_level = kwargs.get("noise_level", self.noise_level)
 
-    def __call__(self, t: float) -> float:
-        return self.offset + self.amplitude * sin(self.frequency * t)
+    def add_noise(self, value):
+        return value + random.uniform(-self.noise_level, self.noise_level)
+
+    def __call__(self, t):
+        value = self.offset
+        if self.func_type == FunctionType.SINE:
+            value += self.amplitude * sin(self.frequency * t)
+        elif self.func_type == FunctionType.SQUARE:
+            value += self.amplitude * (1 if sin(self.frequency * t) >= 0 else -1)
+        elif self.func_type == FunctionType.SAWTOOTH:
+            value += self.amplitude * (
+                2 * (t * self.frequency - int(t * self.frequency + 0.5))
+            )
+
+        return self.add_noise(value)
 
 
 function_generator = FunctionGenerator()
+
 
 def target_function(t: float) -> float:
     """Calculate the target height based on time."""
@@ -253,23 +287,18 @@ R_slider = slider(min=dt, max=0.5, value=0.1, length=300, bind=set_R)
 # Callback functions for the sliders
 def set_amplitude(slider):
     global function_generator
-    function_generator.set_params(
-        slider.value, function_generator.frequency, function_generator.offset
-    )
+    function_generator.set_params(amplitude=slider.value)
 
 
 def set_frequency(slider):
     global function_generator
-    function_generator.set_params(
-        function_generator.amplitude, slider.value, function_generator.offset
-    )
+    function_generator.set_params(frequency=slider.value)
 
 
 def set_offset(slider):
     global function_generator
-    function_generator.set_params(
-        function_generator.amplitude, function_generator.frequency, slider.value
-    )
+    function_generator.set_params(offset=slider.value)
+
 
 # Add sliders for target function
 wtext(text="\n")
@@ -280,6 +309,37 @@ frequency_slider = slider(min=0, max=10, value=0.1, length=300, bind=set_frequen
 wtext(text=" Offset")
 offset_slider = slider(min=0, max=10, value=5.0, length=300, bind=set_offset)
 
+
+def set_sine():
+    global function_generator
+    function_generator.set_params(func_type=FunctionType.SINE)
+
+
+def set_square():
+    global function_generator
+    function_generator.set_params(func_type=FunctionType.SQUARE)
+
+
+def set_sawtooth():
+    global function_generator
+    function_generator.set_params(func_type=FunctionType.SAWTOOTH)
+
+
+wtext(text="\n")
+radio(bind=set_sine, text="Sine", checked=True)
+radio(bind=set_square, text="Square")
+radio(bind=set_sawtooth, text="Sawtooth")
+wtext(text="\n")
+
+
+# Set Noise Level
+def set_noise_level(slider):
+    global function_generator
+    function_generator.set_params(noise_level=slider.value)
+
+
+wtext(text=" Noise Level")
+noise_level_slider = slider(min=0, max=1, value=0.2, length=300, bind=set_noise_level)
 
 # Initialize flags for controllers
 target_enabled = True
