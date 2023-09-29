@@ -86,12 +86,16 @@ class ControlVisualizer:
         self,
         graph1: gcurve,
         graph2: gcurve,
+        graph3: gcurve,
+        graph4: gcurve,
         ball: sphere,
         controller: Controller,
         checkbox: checkbox,
     ) -> None:
         self.graph1 = graph1
         self.graph2 = graph2
+        self.graph3 = graph3
+        self.graph4 = graph4
         self.ball = ball
         self.controller = controller
         self.checkbox = checkbox
@@ -103,14 +107,18 @@ class ControlVisualizer:
     def update_ball(self, target_height: float, t: float) -> None:
         """Update the position of the ball based on the controller."""
         error = target_height - self.ball.pos.y
+        self.errors.append(error)
         output = self.controller.update(error)
         self.controller.tune(error)
         self.ball.pos.y += output * dt
         if self.checkbox.checked:
             self.graph1.plot(t, error)
+            self.graph3.plot(t, np.max(self.errors) - target_height)  # Overshoot
+            self.graph4.plot(
+                t, np.abs(self.errors[-1] - target_height)
+            )  # Steady state error
         # move ball forward simulating time
         self.ball.pos.z += dt
-        self.errors.append(error)
 
         if t > 0 and self.checkbox.checked and t - self.last_update_time >= 1.0:
             self.graph2.delete()
@@ -146,6 +154,22 @@ bang_error_graph2 = gcurve(color=color.green, label="Bang-Bang Error")
 p_error_graph2 = gcurve(color=color.blue, label="P-Only Error")
 fuzzy_error_graph2 = gcurve(color=color.purple, label="Fuzzy Logic Error")
 lqr_error_graph2 = gcurve(color=color.magenta, label="LQR Error")
+
+# Initialize overshoot graphs
+graph3 = graph(scroll=True, fast=True, xmin=0, xmax=10)
+pid_error_graph3 = gcurve(color=color.red, label="PID Overshoot")
+bang_error_graph3 = gcurve(color=color.green, label="Bang-Bang Overshoot")
+p_error_graph3 = gcurve(color=color.blue, label="P-Only Overshoot")
+fuzzy_error_graph3 = gcurve(color=color.purple, label="Fuzzy Logic Overshoot")
+lqr_error_graph3 = gcurve(color=color.magenta, label="LQR Overshoot")
+
+# Initialize steady state error graphs
+graph4 = graph(scroll=True, fast=True, xmin=0, xmax=10)
+pid_error_graph4 = gcurve(color=color.red, label="PID steady state error")
+bang_error_graph4 = gcurve(color=color.green, label="Bang-Bang steady state error")
+p_error_graph4 = gcurve(color=color.blue, label="P-Only steady state error")
+fuzzy_error_graph4 = gcurve(color=color.purple, label="Fuzzy Logic steady state error")
+lqr_error_graph4 = gcurve(color=color.magenta, label="LQR steady state error")
 
 pid_ball = sphere(
     pos=vector(-5, 0, 0),
@@ -400,23 +424,49 @@ lqr_errors = []
 # Create visualizer objects
 visualizers = [
     ControlVisualizer(
-        pid_error_graph, pid_error_graph2, pid_ball, pid_controller, pid_checkbox
+        pid_error_graph,
+        pid_error_graph2,
+        pid_error_graph3,
+        pid_error_graph4,
+        pid_ball,
+        pid_controller,
+        pid_checkbox,
     ),
     ControlVisualizer(
-        bang_error_graph, bang_error_graph2, bang_ball, bang_controller, bang_checkbox
+        bang_error_graph,
+        bang_error_graph2,
+        bang_error_graph3,
+        bang_error_graph4,
+        bang_ball,
+        bang_controller,
+        bang_checkbox,
     ),
     ControlVisualizer(
-        p_error_graph, p_error_graph2, p_only_ball, p_only_controller, p_only_checkbox
+        p_error_graph,
+        p_error_graph2,
+        p_error_graph3,
+        pid_error_graph4,
+        p_only_ball,
+        p_only_controller,
+        p_only_checkbox,
     ),
     ControlVisualizer(
         fuzzy_error_graph,
         fuzzy_error_graph2,
+        fuzzy_error_graph3,
+        fuzzy_error_graph4,
         fuzzy_ball,
         fuzzy_controller,
         fuzzy_checkbox,
     ),
     ControlVisualizer(
-        lqr_error_graph, lqr_error_graph2, lqr_ball, lqr_controller, lqr_checkbox
+        lqr_error_graph,
+        lqr_error_graph2,
+        fuzzy_error_graph3,
+        fuzzy_error_graph4,
+        lqr_ball,
+        lqr_controller,
+        lqr_checkbox,
     ),
 ]
 
